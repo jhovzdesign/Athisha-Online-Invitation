@@ -31,6 +31,9 @@ import {
   Save,
   CheckCircle2,
   RotateCcw,
+  MapPin,
+  ExternalLink,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { compressAndReadImageFile } from '../../utils/imageUpload';
 
@@ -651,6 +654,7 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
                   type="text"
                   value={data.baptismChurch}
                   onChange={(e) => updateField('baptismChurch', e.target.value)}
+                  placeholder="e.g. St. Joseph Parish Church"
                   className="w-full px-3 py-2 text-xs border border-stone-200 rounded-xl"
                 />
               </div>
@@ -661,6 +665,66 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
                   type="text"
                   value={data.baptismAddress}
                   onChange={(e) => updateField('baptismAddress', e.target.value)}
+                  placeholder="e.g. MacArthur Highway, Urdaneta City"
+                  className="w-full px-3 py-2 text-xs border border-stone-200 rounded-xl"
+                />
+              </div>
+
+              {/* Church Map / Navigation Link */}
+              <div className="bg-amber-50/60 p-3 rounded-2xl border border-amber-200/70 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-amber-900">
+                    <MapPin className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                    <span>Church Map / Navigation Link</span>
+                  </label>
+                  {data.baptismMapsUrl && (
+                    <a
+                      href={data.baptismMapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] text-amber-800 hover:text-amber-950 font-medium hover:underline"
+                      title="Test open map link"
+                    >
+                      <span>Test Link</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+                <input
+                  type="url"
+                  value={data.baptismMapsUrl || ''}
+                  onChange={(e) => updateField('baptismMapsUrl', e.target.value)}
+                  placeholder="https://maps.google.com/?q=... or Waze link"
+                  className="w-full px-3 py-2 text-xs border border-amber-200 bg-white rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-mono text-[11px]"
+                />
+                <div className="flex items-center justify-between gap-2 pt-0.5">
+                  <span className="text-[10px] text-stone-500">
+                    Guests can tap address to navigate via GPS
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const query = [data.baptismChurch, data.baptismAddress].filter(Boolean).join(', ');
+                      if (query) {
+                        const generatedUrl = `https://maps.google.com/?q=${encodeURIComponent(query)}`;
+                        updateField('baptismMapsUrl', generatedUrl);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-800 hover:text-amber-950 bg-amber-100/80 hover:bg-amber-200/80 px-2 py-1 rounded-lg transition-colors cursor-pointer shrink-0"
+                  >
+                    <Sparkles className="w-2.5 h-2.5" />
+                    <span>Generate Map Link</span>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-stone-700 mb-1">Ceremony Note (Optional)</label>
+                <input
+                  type="text"
+                  value={data.baptismNotes || ''}
+                  onChange={(e) => updateField('baptismNotes', e.target.value)}
+                  placeholder="e.g. The Sacred Rite begins promptly. Please be seated by 9:45 AM."
                   className="w-full px-3 py-2 text-xs border border-stone-200 rounded-xl"
                 />
               </div>
@@ -700,6 +764,7 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
                   type="text"
                   value={data.birthdayVenue}
                   onChange={(e) => updateField('birthdayVenue', e.target.value)}
+                  placeholder="e.g. The Garden Events Place"
                   className="w-full px-3 py-2 text-xs border border-stone-200 rounded-xl"
                 />
               </div>
@@ -710,6 +775,66 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
                   type="text"
                   value={data.birthdayAddress}
                   onChange={(e) => updateField('birthdayAddress', e.target.value)}
+                  placeholder="e.g. Poblacion, Urdaneta City"
+                  className="w-full px-3 py-2 text-xs border border-stone-200 rounded-xl"
+                />
+              </div>
+
+              {/* Venue Map / Navigation Link */}
+              <div className="bg-amber-50/60 p-3 rounded-2xl border border-amber-200/70 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-amber-900">
+                    <MapPin className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                    <span>Reception Map / Navigation Link</span>
+                  </label>
+                  {data.birthdayMapsUrl && (
+                    <a
+                      href={data.birthdayMapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] text-amber-800 hover:text-amber-950 font-medium hover:underline"
+                      title="Test open map link"
+                    >
+                      <span>Test Link</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+                <input
+                  type="url"
+                  value={data.birthdayMapsUrl || ''}
+                  onChange={(e) => updateField('birthdayMapsUrl', e.target.value)}
+                  placeholder="https://maps.google.com/?q=... or Waze link"
+                  className="w-full px-3 py-2 text-xs border border-amber-200 bg-white rounded-xl focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-mono text-[11px]"
+                />
+                <div className="flex items-center justify-between gap-2 pt-0.5">
+                  <span className="text-[10px] text-stone-500">
+                    Guests can tap address to navigate via GPS
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const query = [data.birthdayVenue, data.birthdayAddress].filter(Boolean).join(', ');
+                      if (query) {
+                        const generatedUrl = `https://maps.google.com/?q=${encodeURIComponent(query)}`;
+                        updateField('birthdayMapsUrl', generatedUrl);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-800 hover:text-amber-950 bg-amber-100/80 hover:bg-amber-200/80 px-2 py-1 rounded-lg transition-colors cursor-pointer shrink-0"
+                  >
+                    <Sparkles className="w-2.5 h-2.5" />
+                    <span>Generate Map Link</span>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-stone-700 mb-1">Reception Note (Optional)</label>
+                <input
+                  type="text"
+                  value={data.birthdayNotes || ''}
+                  onChange={(e) => updateField('birthdayNotes', e.target.value)}
+                  placeholder="e.g. A feast of thanksgiving, sweet cake cutting, and celebration!"
                   className="w-full px-3 py-2 text-xs border border-stone-200 rounded-xl"
                 />
               </div>
