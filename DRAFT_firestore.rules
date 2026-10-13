@@ -1,0 +1,85 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common Primitive Helpers
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Site Entity Validation
+    function isValidSite(data) {
+      return data.keys().hasAll(['id', 'slug', 'title', 'isPublished', 'createdAt', 'allowGuestRsvp', 'data']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.slug is string && data.slug.size() <= 64 &&
+        data.title is string && data.title.size() <= 200 &&
+        data.isPublished is bool &&
+        data.createdAt is string && data.createdAt.size() <= 64 &&
+        data.allowGuestRsvp is bool &&
+        data.data is map &&
+        (!('publishedAt' in data) || (data.publishedAt is string && data.publishedAt.size() <= 64)) &&
+        (!('viewCount' in data) || (data.viewCount is number)) &&
+        (!('passwordProtected' in data) || (data.passwordProtected is bool)) &&
+        (!('password' in data) || (data.password is string && data.password.size() <= 64));
+    }
+
+    // Guest RSVP Entity Validation
+    function isValidRsvp(data) {
+      return data.keys().hasAll(['id', 'name', 'attending', 'guestCount', 'submittedAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+        data.attending is bool &&
+        data.guestCount is number && data.guestCount >= 0 && data.guestCount <= 50 &&
+        data.submittedAt is string && data.submittedAt.size() <= 64 &&
+        (!('emailOrPhone' in data) || (data.emailOrPhone is string && data.emailOrPhone.size() <= 100)) &&
+        (!('message' in data) || (data.message is string && data.message.size() <= 1000)) &&
+        (!('dietaryRestrictions' in data) || (data.dietaryRestrictions is string && data.dietaryRestrictions.size() <= 300));
+    }
+
+    // System Config Validation
+    function isValidConfig(data) {
+      return data.keys().hasAll(['adminUsername', 'adminPasswordHash']) &&
+        data.adminUsername is string && data.adminUsername.size() > 0 && data.adminUsername.size() <= 64 &&
+        data.adminPasswordHash is string && data.adminPasswordHash.size() > 0 && data.adminPasswordHash.size() <= 128 &&
+        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+    }
+
+    // Invitation Sites Collection
+    match /sites/{siteId} {
+      allow get, list: if isValidId(siteId);
+      allow create: if isValidId(siteId) && isValidSite(incoming());
+      allow update: if isValidId(siteId) && isValidSite(incoming());
+      allow delete: if isValidId(siteId);
+
+      // Subcollection for Guest RSVPs
+      match /rsvps/{rsvpId} {
+        allow get, list: if isValidId(siteId) && isValidId(rsvpId);
+        allow create: if isValidId(siteId) && isValidId(rsvpId) && isValidRsvp(incoming());
+        allow update: if isValidId(siteId) && isValidId(rsvpId) && isValidRsvp(incoming());
+        allow delete: if isValidId(siteId) && isValidId(rsvpId);
+      }
+    }
+
+    // Central System Configuration (Admin credentials and shared settings)
+    match /system/{configId} {
+      allow get: if isValidId(configId);
+      allow list: if false;
+      allow create, update: if isValidId(configId) && isValidConfig(incoming());
+      allow delete: if false;
+    }
+  }
+}

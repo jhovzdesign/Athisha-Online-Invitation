@@ -1,0 +1,146 @@
+{
+  "entities": {
+    "Site": {
+      "title": "Site",
+      "description": "A public or draft digital invitation website with event details and styling",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique site identifier",
+          "maxLength": 128
+        },
+        "slug": {
+          "type": "string",
+          "description": "URL slug for the public invitation link",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_-]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the invitation event",
+          "maxLength": 200
+        },
+        "isPublished": {
+          "type": "boolean",
+          "description": "Whether the invitation is live for public guests"
+        },
+        "publishedAt": {
+          "type": "string",
+          "description": "Human-readable publication date string",
+          "maxLength": 64
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp string",
+          "maxLength": 64
+        },
+        "viewCount": {
+          "type": "number",
+          "description": "Total views recorded"
+        },
+        "allowGuestRsvp": {
+          "type": "boolean",
+          "description": "Whether guests can submit RSVPs"
+        },
+        "passwordProtected": {
+          "type": "boolean",
+          "description": "Whether accessing the guest site requires a PIN"
+        },
+        "password": {
+          "type": "string",
+          "description": "Optional access PIN code",
+          "maxLength": 32
+        },
+        "data": {
+          "type": "object",
+          "description": "Full invitation content including baby details, dates, venues, photos, and styling"
+        }
+      },
+      "required": ["id", "slug", "title", "isPublished", "createdAt", "allowGuestRsvp", "data"]
+    },
+    "GuestRsvp": {
+      "title": "GuestRsvp",
+      "description": "Guest RSVP response including attendance status, guest count, and blessings",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique RSVP ID",
+          "maxLength": 128
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the invited guest",
+          "maxLength": 100
+        },
+        "emailOrPhone": {
+          "type": "string",
+          "description": "Contact info of the guest",
+          "maxLength": 100
+        },
+        "attending": {
+          "type": "boolean",
+          "description": "Whether the guest will attend"
+        },
+        "guestCount": {
+          "type": "number",
+          "description": "Number of guests attending"
+        },
+        "message": {
+          "type": "string",
+          "description": "Blessing or personal message to the family",
+          "maxLength": 1000
+        },
+        "dietaryRestrictions": {
+          "type": "string",
+          "description": "Special dietary needs",
+          "maxLength": 300
+        },
+        "submittedAt": {
+          "type": "string",
+          "description": "Timestamp when RSVP was submitted",
+          "maxLength": 64
+        }
+      },
+      "required": ["id", "name", "attending", "guestCount", "submittedAt"]
+    },
+    "SystemConfig": {
+      "title": "SystemConfig",
+      "description": "System-wide settings such as admin credentials",
+      "type": "object",
+      "properties": {
+        "adminUsername": {
+          "type": "string",
+          "description": "Admin username",
+          "maxLength": 64
+        },
+        "adminPasswordHash": {
+          "type": "string",
+          "description": "Admin password hash or passphrase",
+          "maxLength": 128
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Last update timestamp",
+          "maxLength": 64
+        }
+      },
+      "required": ["adminUsername", "adminPasswordHash"]
+    }
+  },
+  "firestore": {
+    "/sites/{siteId}": {
+      "schema": "Site",
+      "description": "All public and draft invitation sites managed across devices"
+    },
+    "/sites/{siteId}/rsvps/{rsvpId}": {
+      "schema": "GuestRsvp",
+      "description": "Real-time guest RSVP submissions for a specific invitation site"
+    },
+    "/system/{configId}": {
+      "schema": "SystemConfig",
+      "description": "Centralized system configuration and admin credentials"
+    }
+  }
+}
