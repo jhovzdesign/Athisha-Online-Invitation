@@ -36,12 +36,12 @@ service cloud.firestore {
         data.createdAt is string && data.createdAt.size() <= 64 &&
         data.allowGuestRsvp is bool &&
         data.data is map &&
-        (!('publishedAt' in data) || (data.publishedAt is string && data.publishedAt.size() <= 64)) &&
-        (!('viewCount' in data) || (data.viewCount is number)) &&
-        (!('passwordProtected' in data) || (data.passwordProtected is bool)) &&
-        (!('password' in data) || (data.password is string && data.password.size() <= 64)) &&
-        (!('rsvps' in data) || (data.rsvps is list)) &&
-        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+        (!('publishedAt' in data) || data.publishedAt == null || (data.publishedAt is string && data.publishedAt.size() <= 64)) &&
+        (!('viewCount' in data) || data.viewCount == null || (data.viewCount is number)) &&
+        (!('passwordProtected' in data) || data.passwordProtected == null || (data.passwordProtected is bool)) &&
+        (!('password' in data) || data.password == null || (data.password is string && data.password.size() <= 64)) &&
+        (!('rsvps' in data) || data.rsvps == null || (data.rsvps is list)) &&
+        (!('updatedAt' in data) || data.updatedAt == null || (data.updatedAt is string && data.updatedAt.size() <= 64));
     }
 
     // Guest RSVP Entity Validation
@@ -52,9 +52,9 @@ service cloud.firestore {
         data.attending is bool &&
         data.guestCount is number && data.guestCount >= 0 && data.guestCount <= 50 &&
         data.submittedAt is string && data.submittedAt.size() <= 64 &&
-        (!('emailOrPhone' in data) || (data.emailOrPhone is string && data.emailOrPhone.size() <= 100)) &&
-        (!('message' in data) || (data.message is string && data.message.size() <= 1000)) &&
-        (!('dietaryRestrictions' in data) || (data.dietaryRestrictions is string && data.dietaryRestrictions.size() <= 300));
+        (!('emailOrPhone' in data) || data.emailOrPhone == null || (data.emailOrPhone is string && data.emailOrPhone.size() <= 100)) &&
+        (!('message' in data) || data.message == null || (data.message is string && data.message.size() <= 1000)) &&
+        (!('dietaryRestrictions' in data) || data.dietaryRestrictions == null || (data.dietaryRestrictions is string && data.dietaryRestrictions.size() <= 300));
     }
 
     // System Config Validation
@@ -62,7 +62,7 @@ service cloud.firestore {
       return data.keys().hasAll(['adminUsername', 'adminPasswordHash']) &&
         data.adminUsername is string && data.adminUsername.size() > 0 && data.adminUsername.size() <= 64 &&
         data.adminPasswordHash is string && data.adminPasswordHash.size() > 0 && data.adminPasswordHash.size() <= 128 &&
-        (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() <= 64));
+        (!('updatedAt' in data) || data.updatedAt == null || (data.updatedAt is string && data.updatedAt.size() <= 64));
     }
 
     // Invitation Sites Collection

@@ -28,12 +28,17 @@ import {
   Upload,
   Camera,
   AlertCircle,
+  Save,
+  CheckCircle2,
 } from 'lucide-react';
 import { compressAndReadImageFile } from '../../utils/imageUpload';
 
 interface BuilderSidebarProps {
   data: InvitationData;
   onChange: (updated: InvitationData) => void;
+  onSaveNow?: () => Promise<void>;
+  isSaving?: boolean;
+  lastSyncTime?: string;
   guestRsvps: GuestRsvp[];
   onOpenShare: () => void;
   onClearRsvps: () => void;
@@ -44,6 +49,9 @@ type TabType = 'invitation' | 'design' | 'family' | 'gallery' | 'rsvps';
 export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
   data,
   onChange,
+  onSaveNow,
+  isSaving = false,
+  lastSyncTime,
   guestRsvps,
   onOpenShare,
   onClearRsvps,
@@ -52,6 +60,12 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
   const [isUploadingBabyPhoto, setIsUploadingBabyPhoto] = useState(false);
   const [isUploadingGalleryPhoto, setIsUploadingGalleryPhoto] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Hidden file input refs for 100% reliable programmatic click
+  const babyPhotoInputRef = React.useRef<HTMLInputElement>(null);
+  const galleryPhotoInputRef = React.useRef<HTMLInputElement>(null);
 
   // Update helper
   const updateField = <K extends keyof InvitationData>(field: K, value: InvitationData[K]) => {
@@ -61,22 +75,60 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
     });
   };
 
-  // Upload handler for main baby portrait photo
-  const handleBabyPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const showSaveSuccess = (msg: string) => {
+    setSaveSuccessMsg(msg);
+    setTimeout(() => {
+      setSaveSuccessMsg(null);
+    }, 3500);
+  };
 
+  // Upload handler for main baby portrait photo (from file input or drop)
+  const processAndApplyBabyPhoto = async (file: File) => {
     setIsUploadingBabyPhoto(true);
     setUploadError(null);
+    setSaveSuccessMsg(null);
+
     try {
-      const dataUrl = await compressAndReadImageFile(file, 1200, 1200, 0.85);
-      updateField('babyPhotoUrl', dataUrl);
+      const dataUrl = await compressAndReadImageFile(file, 800, 800, 0.82);
+      if (!dataUrl) {
+        throw new Error('Could not read image file. Please try a different photo.');
+      }
+      
+      const updated = {
+        ...data,
+        babyPhotoUrl: dataUrl,
+      };
+      onChange(updated);
+
+      // Trigger immediate cloud save
+      if (onSaveNow) {
+        await onSaveNow();
+      }
+      showSaveSuccess('Baby photo uploaded & saved to cloud database!');
     } catch (err: any) {
-      console.error('Error uploading photo:', err);
+      console.error('Error uploading baby photo:', err);
       setUploadError(err?.message || 'Failed to process image file');
     } finally {
       setIsUploadingBabyPhoto(false);
-      e.target.value = '';
+      if (babyPhotoInputRef.current) {
+        babyPhotoInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleBabyPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processAndApplyBabyPhoto(file);
+    }
+  };
+
+  const handleDropBabyPhoto = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      processAndApplyBabyPhoto(file);
     }
   };
 
@@ -87,21 +139,38 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
 
     setIsUploadingGalleryPhoto(true);
     setUploadError(null);
+    setSaveSuccessMsg(null);
+
     try {
-      const dataUrl = await compressAndReadImageFile(file, 1000, 1000, 0.82);
+      const dataUrl = await compressAndReadImageFile(file, 800, 800, 0.8);
+      if (!dataUrl) {
+        throw new Error('Could not read image file.');
+      }
+
       const newPhoto = {
         id: 'photo_' + Date.now(),
         url: dataUrl,
         caption: `Sweet Memory ${data.photos.length + 1}`,
         ageMonth: '',
       };
-      updateField('photos', [...data.photos, newPhoto]);
+      const updated = {
+        ...data,
+        photos: [...data.photos, newPhoto],
+      };
+      onChange(updated);
+
+      if (onSaveNow) {
+        await onSaveNow();
+      }
+      showSaveSuccess('New scrapbook photo uploaded and saved!');
     } catch (err: any) {
       console.error('Error uploading gallery photo:', err);
       setUploadError(err?.message || 'Failed to process image file');
     } finally {
       setIsUploadingGalleryPhoto(false);
-      e.target.value = '';
+      if (galleryPhotoInputRef.current) {
+        galleryPhotoInputRef.current.value = '';
+      }
     }
   };
 
@@ -115,13 +184,24 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
 
     setUploadError(null);
     try {
-      const dataUrl = await compressAndReadImageFile(file, 1000, 1000, 0.82);
-      const updated = [...data.photos];
-      updated[idx] = {
-        ...updated[idx],
+      const dataUrl = await compressAndReadImageFile(file, 800, 800, 0.8);
+      if (!dataUrl) return;
+
+      const updatedPhotos = [...data.photos];
+      updatedPhotos[idx] = {
+        ...updatedPhotos[idx],
         url: dataUrl,
       };
-      updateField('photos', updated);
+      const updated = {
+        ...data,
+        photos: updatedPhotos,
+      };
+      onChange(updated);
+
+      if (onSaveNow) {
+        await onSaveNow();
+      }
+      showSaveSuccess('Photo replaced and saved!');
     } catch (err: any) {
       console.error('Error replacing gallery photo:', err);
       setUploadError(err?.message || 'Failed to process image file');
@@ -215,23 +295,52 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
   return (
     <div className="w-full h-full flex flex-col bg-white border-r border-stone-200 font-montserrat select-none">
       {/* Sidebar Header */}
-      <div className="p-4 border-b border-stone-200 flex items-center justify-between bg-stone-50/50">
-        <div>
-          <span className="text-[10px] tracking-widest uppercase font-semibold text-amber-700 block">
-            INVITATION DESIGN STUDIO
-          </span>
-          <h2 className="text-sm font-bold text-stone-800">
-            {data.babyName}&apos;s Celebration
-          </h2>
+      <div className="p-4 border-b border-stone-200 bg-stone-50/50 space-y-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-[10px] tracking-widest uppercase font-semibold text-amber-700 block">
+              INVITATION DESIGN STUDIO
+            </span>
+            <h2 className="text-sm font-bold text-stone-800">
+              {data.babyName}&apos;s Celebration
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {onSaveNow && (
+              <button
+                type="button"
+                onClick={async () => {
+                  await onSaveNow();
+                  showSaveSuccess('All changes saved to centralized cloud database!');
+                }}
+                disabled={isSaving}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold text-stone-800 bg-stone-100 hover:bg-stone-200 border border-stone-200 flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+                title="Save changes to cloud database"
+              >
+                <Save className="w-3.5 h-3.5 text-stone-600" />
+                <span>{isSaving ? 'Saving...' : 'Save'}</span>
+              </button>
+            )}
+
+            <button
+              onClick={onOpenShare}
+              className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white flex items-center gap-1.5 shadow-xs transition-all hover:opacity-95 active:scale-95 cursor-pointer"
+              style={{ backgroundColor: data.accentColor }}
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>Share</span>
+            </button>
+          </div>
         </div>
-        <button
-          onClick={onOpenShare}
-          className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-white flex items-center gap-1.5 shadow-xs transition-all hover:opacity-95 active:scale-95 cursor-pointer"
-          style={{ backgroundColor: data.accentColor }}
-        >
-          <Share2 className="w-3.5 h-3.5" />
-          <span>Publish &amp; Link</span>
-        </button>
+
+        {/* Success / Status feedback notification */}
+        {saveSuccessMsg && (
+          <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 animate-fade-in shadow-2xs">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span className="font-medium text-[11px]">{saveSuccessMsg}</span>
+          </div>
+        )}
       </div>
 
       {/* Navigation Tabs */}
@@ -352,21 +461,28 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
 
               {/* Baby Portrait Photo with Direct Upload */}
               <div className="space-y-2.5">
+                <input
+                  ref={babyPhotoInputRef}
+                  type="file"
+                  accept="image/*"
+                  disabled={isUploadingBabyPhoto}
+                  onChange={handleBabyPhotoUpload}
+                  className="hidden"
+                />
+
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-semibold text-stone-700">
                     Baby Portrait Photo
                   </label>
-                  <label className="text-[11px] font-semibold text-amber-800 hover:text-amber-900 flex items-center gap-1 cursor-pointer hover:underline">
+                  <button
+                    type="button"
+                    onClick={() => babyPhotoInputRef.current?.click()}
+                    disabled={isUploadingBabyPhoto}
+                    className="text-[11px] font-semibold text-amber-800 hover:text-amber-900 flex items-center gap-1 cursor-pointer hover:underline disabled:opacity-50"
+                  >
                     <Upload className="w-3.5 h-3.5 text-amber-700" />
                     <span>Upload from Device</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      disabled={isUploadingBabyPhoto}
-                      onChange={handleBabyPhotoUpload}
-                      className="hidden"
-                    />
-                  </label>
+                  </button>
                 </div>
 
                 {uploadError && (
@@ -376,47 +492,75 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
                   </div>
                 )}
 
-                {/* Upload Action Banner */}
-                <div className="flex items-center gap-3 p-3 bg-stone-50 rounded-2xl border border-dashed border-stone-300 hover:border-amber-500/70 transition-colors">
-                  <div className="relative w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-stone-200 bg-white shadow-2xs">
+                {/* Upload Action Banner & Drag-and-Drop Dropzone */}
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragging(true);
+                  }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={handleDropBabyPhoto}
+                  className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${
+                    isDragging
+                      ? 'border-amber-600 bg-amber-50/60 scale-[1.01]'
+                      : 'border-dashed border-stone-300 bg-stone-50 hover:border-amber-500/70'
+                  }`}
+                >
+                  <div
+                    onClick={() => babyPhotoInputRef.current?.click()}
+                    className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-stone-200 bg-white shadow-xs cursor-pointer group"
+                    title="Click to choose a new photo"
+                  >
                     <img
                       src={data.babyPhotoUrl}
                       alt="Baby Portrait"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
                     />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
+                      <Camera className="w-4 h-4" />
+                    </div>
                     {isUploadingBabyPhoto && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                         <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       </div>
                     )}
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <span className="block text-xs font-semibold text-stone-800 truncate">
-                      {data.babyPhotoUrl.startsWith('data:') ? 'Custom Uploaded Photo' : 'Current Portrait'}
-                    </span>
-                    <p className="text-[10px] text-stone-500 truncate mb-1.5">
-                      Upload from phone gallery or computer
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="block text-xs font-bold text-stone-800 truncate">
+                        {data.babyPhotoUrl.startsWith('data:') ? 'Custom Uploaded Photo' : 'Current Portrait'}
+                      </span>
+                      {data.babyPhotoUrl.startsWith('data:') && (
+                        <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded-full uppercase">
+                          Saved
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-stone-500 truncate mb-2">
+                      Click below or drag &amp; drop any photo here
                     </p>
                     <div className="flex items-center gap-2">
-                      <label className="px-2.5 py-1 bg-amber-700 hover:bg-amber-800 text-white rounded-lg text-[11px] font-semibold cursor-pointer transition-all flex items-center gap-1 shadow-2xs active:scale-95">
-                        <Camera className="w-3 h-3" />
-                        <span>{isUploadingBabyPhoto ? 'Uploading...' : 'Choose / Take Photo'}</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          disabled={isUploadingBabyPhoto}
-                          onChange={handleBabyPhotoUpload}
-                          className="hidden"
-                        />
-                      </label>
+                      <button
+                        type="button"
+                        onClick={() => babyPhotoInputRef.current?.click()}
+                        disabled={isUploadingBabyPhoto}
+                        className="px-3 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded-xl text-[11px] font-semibold cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 disabled:opacity-50"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>{isUploadingBabyPhoto ? 'Processing Photo...' : 'Choose / Take Photo'}</span>
+                      </button>
+
                       {data.babyPhotoUrl.startsWith('data:') && (
                         <button
                           type="button"
-                          onClick={() => updateField('babyPhotoUrl', photoPresets[0].url)}
+                          onClick={() => {
+                            updateField('babyPhotoUrl', photoPresets[0].url);
+                            if (onSaveNow) onSaveNow();
+                          }}
                           className="text-[10px] text-stone-500 hover:text-rose-600 underline cursor-pointer"
                         >
-                          Reset to Preset
+                          Reset
                         </button>
                       )}
                     </div>
@@ -955,17 +1099,24 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
                   <span className="text-[11px] text-stone-500">Milestone Memories</span>
                 </div>
 
-                <label className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-stone-900 hover:bg-stone-800 text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95">
+                <input
+                  ref={galleryPhotoInputRef}
+                  type="file"
+                  accept="image/*"
+                  disabled={isUploadingGalleryPhoto}
+                  onChange={handleGalleryPhotoUpload}
+                  className="hidden"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => galleryPhotoInputRef.current?.click()}
+                  disabled={isUploadingGalleryPhoto}
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-stone-900 hover:bg-stone-800 text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-95 disabled:opacity-50"
+                >
                   <Upload className="w-3.5 h-3.5" />
-                  <span>{isUploadingGalleryPhoto ? 'Uploading...' : 'Upload Photo'}</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    disabled={isUploadingGalleryPhoto}
-                    onChange={handleGalleryPhotoUpload}
-                    className="hidden"
-                  />
-                </label>
+                  <span>{isUploadingGalleryPhoto ? 'Processing...' : 'Upload Photo'}</span>
+                </button>
               </div>
 
               {uploadError && (

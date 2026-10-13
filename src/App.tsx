@@ -344,16 +344,31 @@ export default function App() {
       clearTimeout(debounceTimerRef.current);
     }
 
-    debounceTimerRef.current = setTimeout(async () => {
-      try {
-        await saveSiteToCloud(updatedSite);
-        setCloudStatus('connected');
-        setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-      } catch (err) {
-        console.error('Error saving updated site to cloud:', err);
-        setCloudStatus('error');
-      }
-    }, 400);
+      debounceTimerRef.current = setTimeout(async () => {
+        try {
+          await saveSiteToCloud(updatedSite);
+          setCloudStatus('connected');
+          setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        } catch (err) {
+          console.error('Error saving updated site to cloud:', err);
+          setCloudStatus('error');
+        }
+      }, 400);
+    };
+
+  // Immediate save to cloud (called on photo uploads or explicit save button)
+  const handleSaveActiveSiteImmediately = async (customSite?: PublicSite): Promise<void> => {
+    const siteToSave = customSite || activeSite;
+    setCloudStatus('syncing');
+    try {
+      await saveSiteToCloud(siteToSave);
+      setCloudStatus('connected');
+      setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    } catch (err) {
+      console.error('Immediate save to cloud failed:', err);
+      setCloudStatus('error');
+      throw err;
+    }
   };
 
   // RSVP submission (by guest on public site or preview) -> Saved to Cloud
@@ -758,6 +773,9 @@ export default function App() {
           <BuilderSidebar
             data={activeSite.data}
             onChange={handleUpdateActiveSiteData}
+            onSaveNow={handleSaveActiveSiteImmediately}
+            isSaving={cloudStatus === 'syncing'}
+            lastSyncTime={lastSyncTime}
             guestRsvps={activeSite.rsvps}
             onOpenShare={() => setIsShareModalOpen(true)}
             onClearRsvps={handleClearActiveSiteRsvps}

@@ -173,7 +173,9 @@ export async function saveSiteToCloud(site: PublicSite): Promise<void> {
     const siteRef = doc(db, 'sites', site.id);
     // Separate rsvps array so subcollection is source of truth or keep synced
     const { rsvps, ...restSite } = site;
-    await setDoc(siteRef, restSite, { merge: true });
+    // Deep sanitize undefined values to guarantee clean Firestore serialization
+    const cleaned = JSON.parse(JSON.stringify(restSite));
+    await setDoc(siteRef, cleaned, { merge: true });
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
@@ -204,7 +206,8 @@ export async function submitRsvpToCloud(siteId: string, rsvp: GuestRsvp): Promis
   const path = `sites/${siteId}/rsvps/${rsvp.id}`;
   try {
     const rsvpRef = doc(db, 'sites', siteId, 'rsvps', rsvp.id);
-    await setDoc(rsvpRef, rsvp);
+    const cleaned = JSON.parse(JSON.stringify(rsvp));
+    await setDoc(rsvpRef, cleaned);
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, path);
   }
