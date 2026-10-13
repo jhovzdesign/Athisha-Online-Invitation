@@ -55,6 +55,7 @@ export const DecorativeFrame: React.FC<DecorativeFrameProps> = ({
 
     return (
       <img
+        key={photoUrl}
         src={photoUrl}
         alt={altText}
         referrerPolicy="no-referrer"

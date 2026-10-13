@@ -1,4 +1,15 @@
 import { InvitationData, TemplateStyle } from '../types/invitation';
+import defaultBabyPortrait from '../assets/images/baby_baptism_portrait_1791254793568.jpg';
+import sleepingAngelImg from '../assets/images/baby_sleeping_angel_1791254831082.jpg';
+import teddyMemoryImg from '../assets/images/baby_teddy_memory_1791254818642.jpg';
+import cakeGoldImg from '../assets/images/baptism_cake_gold_1791254806162.jpg';
+
+export const ASSET_IMAGES = {
+  babyPortrait: defaultBabyPortrait,
+  sleepingAngel: sleepingAngelImg,
+  teddyMemory: teddyMemoryImg,
+  cakeGold: cakeGoldImg,
+};
 
 export const TEMPLATES: TemplateStyle[] = [
   {
@@ -168,7 +179,7 @@ export const INITIAL_INVITATION_DATA: InvitationData = {
   babyName: 'Liam Alexander',
   babyNickname: 'Liam',
   gender: 'boy',
-  babyPhotoUrl: '/src/assets/images/baby_baptism_portrait_1791254793568.jpg',
+  babyPhotoUrl: defaultBabyPortrait,
   coverKicker: 'YOU ARE INVITED',
   milestoneTitle: 'Holy Baptism & 1st Birthday',
   introHeading: 'With grateful hearts and immense joy,',

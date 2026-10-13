@@ -9,7 +9,7 @@ import {
   Gender,
   GuestRsvp,
 } from '../../types/invitation';
-import { TEMPLATES } from '../../utils/templates';
+import { TEMPLATES, ASSET_IMAGES } from '../../utils/templates';
 import {
   Sparkles,
   Palette,
@@ -30,12 +30,13 @@ import {
   AlertCircle,
   Save,
   CheckCircle2,
+  RotateCcw,
 } from 'lucide-react';
 import { compressAndReadImageFile } from '../../utils/imageUpload';
 
 interface BuilderSidebarProps {
   data: InvitationData;
-  onChange: (updated: InvitationData) => void;
+  onChange: (updated: InvitationData, saveImmediately?: boolean) => void;
   onSaveNow?: () => Promise<void>;
   isSaving?: boolean;
   lastSyncTime?: string;
@@ -89,7 +90,7 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
     setSaveSuccessMsg(null);
 
     try {
-      const dataUrl = await compressAndReadImageFile(file, 800, 800, 0.82);
+      const dataUrl = await compressAndReadImageFile(file, 600, 600, 0.76);
       if (!dataUrl) {
         throw new Error('Could not read image file. Please try a different photo.');
       }
@@ -98,12 +99,9 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
         ...data,
         babyPhotoUrl: dataUrl,
       };
-      onChange(updated);
-
-      // Trigger immediate cloud save
-      if (onSaveNow) {
-        await onSaveNow();
-      }
+      
+      // Immediately reflect across UI and trigger cloud persistence
+      onChange(updated, true);
       showSaveSuccess('Baby photo uploaded & saved to cloud database!');
     } catch (err: any) {
       console.error('Error uploading baby photo:', err);
@@ -142,7 +140,7 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
     setSaveSuccessMsg(null);
 
     try {
-      const dataUrl = await compressAndReadImageFile(file, 800, 800, 0.8);
+      const dataUrl = await compressAndReadImageFile(file, 600, 600, 0.75);
       if (!dataUrl) {
         throw new Error('Could not read image file.');
       }
@@ -157,11 +155,7 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
         ...data,
         photos: [...data.photos, newPhoto],
       };
-      onChange(updated);
-
-      if (onSaveNow) {
-        await onSaveNow();
-      }
+      onChange(updated, true);
       showSaveSuccess('New scrapbook photo uploaded and saved!');
     } catch (err: any) {
       console.error('Error uploading gallery photo:', err);
@@ -184,7 +178,7 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
 
     setUploadError(null);
     try {
-      const dataUrl = await compressAndReadImageFile(file, 800, 800, 0.8);
+      const dataUrl = await compressAndReadImageFile(file, 600, 600, 0.75);
       if (!dataUrl) return;
 
       const updatedPhotos = [...data.photos];
@@ -196,11 +190,7 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
         ...data,
         photos: updatedPhotos,
       };
-      onChange(updated);
-
-      if (onSaveNow) {
-        await onSaveNow();
-      }
+      onChange(updated, true);
       showSaveSuccess('Photo replaced and saved!');
     } catch (err: any) {
       console.error('Error replacing gallery photo:', err);
@@ -460,18 +450,21 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
               </div>
 
               {/* Baby Portrait Photo with Direct Upload */}
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 <input
                   ref={babyPhotoInputRef}
                   type="file"
                   accept="image/*"
                   disabled={isUploadingBabyPhoto}
                   onChange={handleBabyPhotoUpload}
+                  onClick={(e) => {
+                    (e.target as HTMLInputElement).value = '';
+                  }}
                   className="hidden"
                 />
 
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs font-semibold text-stone-700">
+                  <label className="block text-xs font-semibold text-stone-800">
                     Baby Portrait Photo
                   </label>
                   <button
@@ -486,9 +479,9 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
                 </div>
 
                 {uploadError && (
-                  <div className="p-2 rounded-lg bg-rose-50 border border-rose-200 flex items-center gap-1.5 text-[11px] text-rose-700">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-600" />
-                    <span>{uploadError}</span>
+                  <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-2 text-xs text-rose-700">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                    <span className="font-medium">{uploadError}</span>
                   </div>
                 )}
 
@@ -500,67 +493,74 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
                   }}
                   onDragLeave={() => setIsDragging(false)}
                   onDrop={handleDropBabyPhoto}
-                  className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${
+                  className={`flex items-center gap-3.5 p-3.5 rounded-2xl border-2 transition-all ${
                     isDragging
-                      ? 'border-amber-600 bg-amber-50/60 scale-[1.01]'
-                      : 'border-dashed border-stone-300 bg-stone-50 hover:border-amber-500/70'
+                      ? 'border-amber-600 bg-amber-50/70 scale-[1.01]'
+                      : 'border-dashed border-stone-300 bg-stone-50 hover:border-amber-500/80 hover:bg-stone-50/80'
                   }`}
                 >
                   <div
                     onClick={() => babyPhotoInputRef.current?.click()}
-                    className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-stone-200 bg-white shadow-xs cursor-pointer group"
+                    className="relative w-18 h-18 rounded-2xl overflow-hidden shrink-0 border border-stone-200 bg-white shadow-xs cursor-pointer group"
                     title="Click to choose a new photo"
                   >
                     <img
+                      key={data.babyPhotoUrl}
                       src={data.babyPhotoUrl}
                       alt="Baby Portrait"
-                      className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
-                      <Camera className="w-4 h-4" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity text-white text-[10px] font-medium">
+                      <Camera className="w-4 h-4 mb-0.5" />
+                      <span>Change</span>
                     </div>
                     {isUploadingBabyPhoto && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                      <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center text-white text-[9px] gap-1">
                         <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Saving...</span>
                       </div>
                     )}
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className="block text-xs font-bold text-stone-800 truncate">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="block text-xs font-bold text-stone-900 truncate">
                         {data.babyPhotoUrl.startsWith('data:') ? 'Custom Uploaded Photo' : 'Current Portrait'}
                       </span>
                       {data.babyPhotoUrl.startsWith('data:') && (
-                        <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.2 rounded-full uppercase">
-                          Saved
+                        <span className="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                          Active &amp; Saved
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-stone-500 truncate mb-2">
-                      Click below or drag &amp; drop any photo here
+                    <p className="text-[11px] text-stone-500 mb-2.5">
+                      {isUploadingBabyPhoto ? 'Compressing and uploading photo...' : 'Click button below or drag and drop a photo here'}
                     </p>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => babyPhotoInputRef.current?.click()}
                         disabled={isUploadingBabyPhoto}
-                        className="px-3 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded-xl text-[11px] font-semibold cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs active:scale-95 disabled:opacity-50"
+                        className="px-3.5 py-1.5 bg-amber-700 hover:bg-amber-800 text-white rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center gap-1.5 shadow-xs active:scale-95 disabled:opacity-50"
                       >
                         <Camera className="w-3.5 h-3.5" />
-                        <span>{isUploadingBabyPhoto ? 'Processing Photo...' : 'Choose / Take Photo'}</span>
+                        <span>{isUploadingBabyPhoto ? 'Uploading...' : 'Choose / Upload Photo'}</span>
                       </button>
 
                       {data.babyPhotoUrl.startsWith('data:') && (
                         <button
                           type="button"
                           onClick={() => {
-                            updateField('babyPhotoUrl', photoPresets[0].url);
-                            if (onSaveNow) onSaveNow();
+                            const updated = {
+                              ...data,
+                              babyPhotoUrl: photoPresets[0].url,
+                            };
+                            onChange(updated, true);
+                            showSaveSuccess('Reset portrait to sample outfit.');
                           }}
-                          className="text-[10px] text-stone-500 hover:text-rose-600 underline cursor-pointer"
+                          className="text-[11px] text-stone-500 hover:text-rose-600 underline cursor-pointer px-1 py-1"
                         >
-                          Reset
+                          Reset to Sample
                         </button>
                       )}
                     </div>
@@ -568,43 +568,39 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
                 </div>
 
                 {/* Preset Options */}
-                <div>
-                  <span className="block text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-1.5">
+                <div className="pt-1">
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-stone-400 mb-2">
                     Or Choose Sample Portrait
                   </span>
-                  <div className="grid grid-cols-4 gap-2 mb-2">
+                  <div className="grid grid-cols-4 gap-2">
                     {photoPresets.map((p, idx) => (
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => updateField('babyPhotoUrl', p.url)}
+                        onClick={() => {
+                          const updated = {
+                            ...data,
+                            babyPhotoUrl: p.url,
+                          };
+                          onChange(updated, true);
+                          showSaveSuccess(`Applied ${p.label}`);
+                        }}
                         className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
                           data.babyPhotoUrl === p.url
                             ? 'border-amber-600 ring-2 ring-amber-500/30'
-                            : 'border-transparent opacity-70 hover:opacity-100'
+                            : 'border-stone-200 opacity-75 hover:opacity-100 hover:border-stone-300'
                         }`}
                         title={p.label}
                       >
                         <img src={p.url} alt={p.label} className="w-full h-full object-cover" />
                         {data.babyPhotoUrl === p.url && (
-                          <div className="absolute inset-0 bg-amber-600/30 flex items-center justify-center">
-                            <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
+                          <div className="absolute inset-0 bg-amber-700/35 flex items-center justify-center">
+                            <Check className="w-4 h-4 text-white stroke-[3]" />
                           </div>
                         )}
                       </button>
                     ))}
                   </div>
-                  <input
-                    type="text"
-                    value={data.babyPhotoUrl.startsWith('data:') ? '(Custom uploaded image)' : data.babyPhotoUrl}
-                    onChange={(e) => {
-                      if (!e.target.value.startsWith('(Custom')) {
-                        updateField('babyPhotoUrl', e.target.value);
-                      }
-                    }}
-                    placeholder="Or enter custom image URL"
-                    className="w-full px-3 py-1.5 text-[11px] border border-stone-200 rounded-lg text-stone-600 font-mono"
-                  />
                 </div>
               </div>
 
@@ -1105,6 +1101,9 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
                   accept="image/*"
                   disabled={isUploadingGalleryPhoto}
                   onChange={handleGalleryPhotoUpload}
+                  onClick={(e) => {
+                    (e.target as HTMLInputElement).value = '';
+                  }}
                   className="hidden"
                 />
 
@@ -1143,6 +1142,9 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
                           type="file"
                           accept="image/*"
                           onChange={(e) => handleReplaceGalleryPhoto(idx, e)}
+                          onClick={(e) => {
+                            (e.target as HTMLInputElement).value = '';
+                          }}
                           className="hidden"
                         />
                       </label>
@@ -1179,6 +1181,9 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
                             type="file"
                             accept="image/*"
                             onChange={(e) => handleReplaceGalleryPhoto(idx, e)}
+                            onClick={(e) => {
+                              (e.target as HTMLInputElement).value = '';
+                            }}
                             className="hidden"
                           />
                         </label>
@@ -1189,7 +1194,8 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
                       type="button"
                       onClick={() => {
                         const updated = data.photos.filter((_, pIdx) => pIdx !== idx);
-                        updateField('photos', updated);
+                        onChange({ ...data, photos: updated }, true);
+                        showSaveSuccess('Scrapbook photo removed.');
                       }}
                       className="p-1.5 text-stone-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
                       title="Delete Photo"

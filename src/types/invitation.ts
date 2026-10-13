@@ -67,6 +67,7 @@ export interface PublicSite {
   isPublished: boolean;
   publishedAt?: string;
   createdAt: string;
+  updatedAt?: string;
   viewCount: number;
   allowGuestRsvp: boolean;
   passwordProtected?: boolean;

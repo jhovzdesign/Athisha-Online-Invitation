@@ -101,6 +101,7 @@ export default function App() {
   const [lastSyncTime, setLastSyncTime] = useState<string>('Just now');
   const isInitialCloudLoadDone = useRef(false);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastLocalEditTimeRef = useRef<number>(0);
 
   // URL state checking
   const [currentUrlParams, setCurrentUrlParams] = useState<URLSearchParams>(
@@ -224,11 +225,28 @@ export default function App() {
         } else if (cloudSites.length > 0) {
           isInitialCloudLoadDone.current = true;
           setSites((prevSites) => {
-            // Merge with local RSVPs if any were subscribed
             return cloudSites.map((cSite) => {
               const existing = prevSites.find((p) => p.id === cSite.id);
+              const isRecentLocalEdit =
+                cSite.id === activeSiteId &&
+                Date.now() - lastLocalEditTimeRef.current < 4000;
+
+              // If the user recently uploaded a custom photo locally, protect it from being stomped by older remote snapshot
+              let siteData = cSite.data;
+              if (
+                isRecentLocalEdit &&
+                existing?.data?.babyPhotoUrl?.startsWith('data:') &&
+                !cSite.data?.babyPhotoUrl?.startsWith('data:')
+              ) {
+                siteData = {
+                  ...cSite.data,
+                  babyPhotoUrl: existing.data.babyPhotoUrl,
+                };
+              }
+
               return {
                 ...cSite,
+                data: siteData,
                 rsvps: existing?.rsvps?.length ? existing.rsvps : cSite.rsvps || [],
               };
             });
@@ -325,36 +343,52 @@ export default function App() {
     [sites]
   );
 
-  // Update active site data from Builder (Optimistic + Debounced Cloud Save)
-  const handleUpdateActiveSiteData = (updatedData: InvitationData) => {
+  // Update active site data from Builder (Optimistic + Debounced or Immediate Cloud Save)
+  const handleUpdateActiveSiteData = (updatedData: InvitationData, saveImmediately = false) => {
+    lastLocalEditTimeRef.current = Date.now();
     const updatedSite: PublicSite = {
       ...activeSite,
       title: `${updatedData.babyName}'s Holy Baptism & 1st Birthday`,
       data: updatedData,
+      updatedAt: new Date().toISOString(),
     };
 
-    // 1. Instant local update for responsive UI
+    // 1. Instant local update for responsive UI across all views
     setSites((prevSites) =>
       prevSites.map((site) => (site.id === activeSite.id ? updatedSite : site))
     );
 
-    // 2. Debounced save to centralized cloud database
-    setCloudStatus('syncing');
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
 
-      debounceTimerRef.current = setTimeout(async () => {
-        try {
-          await saveSiteToCloud(updatedSite);
+    if (saveImmediately) {
+      setCloudStatus('syncing');
+      saveSiteToCloud(updatedSite)
+        .then(() => {
           setCloudStatus('connected');
           setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-        } catch (err) {
-          console.error('Error saving updated site to cloud:', err);
+        })
+        .catch((err) => {
+          console.error('Error saving site immediately to cloud:', err);
           setCloudStatus('error');
-        }
-      }, 400);
-    };
+        });
+      return;
+    }
+
+    // 2. Debounced save to centralized cloud database
+    setCloudStatus('syncing');
+    debounceTimerRef.current = setTimeout(async () => {
+      try {
+        await saveSiteToCloud(updatedSite);
+        setCloudStatus('connected');
+        setLastSyncTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      } catch (err) {
+        console.error('Error saving updated site to cloud:', err);
+        setCloudStatus('error');
+      }
+    }, 400);
+  };
 
   // Immediate save to cloud (called on photo uploads or explicit save button)
   const handleSaveActiveSiteImmediately = async (customSite?: PublicSite): Promise<void> => {
