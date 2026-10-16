@@ -866,6 +866,7 @@ export default function App() {
         onClose={() => setIsShareModalOpen(false)}
         data={activeSite.data}
         siteSlug={activeSite.slug}
+        customUrl={activeSite.customUrl}
         onOpenGuestView={() => openGuestMode()}
       />
 

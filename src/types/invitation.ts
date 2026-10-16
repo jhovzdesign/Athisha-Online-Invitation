@@ -72,6 +72,7 @@ export interface PublicSite {
   allowGuestRsvp: boolean;
   passwordProtected?: boolean;
   password?: string;
+  customUrl?: string;
   data: InvitationData;
   rsvps: GuestRsvp[];
 }
