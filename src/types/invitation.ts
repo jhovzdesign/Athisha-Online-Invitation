@@ -104,7 +104,7 @@ export interface InvitationData {
   birthdayNotes: string;
 
   // Countdown
-  countdownTarget: string; // ISO date-time string e.g. 2026-12-13T10:00:00
+  countdownTarget: string; // ISO date-time string e.g. 2026-12-07T10:00:00
 
   // Parents
   fatherName: string;

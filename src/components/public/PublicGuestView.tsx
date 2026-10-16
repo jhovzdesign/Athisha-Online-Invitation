@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { InvitationData, GuestRsvp } from '../../types/invitation';
 import { CoverScreen } from '../invitation/CoverScreen';
 import { InvitationView } from '../invitation/InvitationView';
 import { invitationAudio } from '../../utils/audioPlayer';
 import { SacredCrossIcon, GoldSparkleIcon } from '../common/DecorativeIcons';
-import { Edit3, ExternalLink, ShieldCheck, LogOut } from 'lucide-react';
 
 interface PublicGuestViewProps {
   data: InvitationData;
@@ -57,6 +56,17 @@ export const PublicGuestView: React.FC<PublicGuestViewProps> = ({
     }
   };
 
+  // Discreet keyboard shortcut for host/admin access from public view (Alt+A or Ctrl+Shift+A)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.altKey && e.key.toLowerCase() === 'a') || (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a')) {
+        onOpenBuilder?.();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onOpenBuilder]);
+
   return (
     <div
       className="min-h-screen w-full flex flex-col items-center justify-start relative overflow-x-hidden selection:bg-amber-100"
@@ -65,51 +75,7 @@ export const PublicGuestView: React.FC<PublicGuestViewProps> = ({
         backgroundImage: `radial-gradient(ellipse at 50% 0%, #FFFFFF 0%, ${data.secondaryColor} 65%, #EDE6DA 100%)`,
       }}
     >
-      {/* Top Host Bar if Admin is Logged In */}
-      {isAdminLoggedIn && (
-        <div className="w-full bg-stone-900/95 backdrop-blur-md text-white py-2 px-4 flex items-center justify-between text-xs z-30 shrink-0 border-b border-white/10 font-montserrat shadow-sm">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-semibold text-amber-200">Host Mode Active</span>
-            <span className="text-stone-400 hidden sm:inline">· Viewing Public Guest Invitation</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {onOpenBuilder && (
-              <button
-                onClick={onOpenBuilder}
-                className="px-3 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-white font-medium text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span>Return to Admin Studio</span>
-              </button>
-            )}
-            {onLogout && (
-              <button
-                onClick={onLogout}
-                className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 font-medium text-xs flex items-center gap-1 transition-all cursor-pointer"
-                title="Logout from Admin Studio"
-              >
-                <LogOut className="w-3 h-3" />
-                <span>Logout</span>
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Discreet floating Admin Login button for host when not logged in */}
-      {!isAdminLoggedIn && onOpenBuilder && (
-        <div className="fixed top-3 right-3 z-30">
-          <button
-            onClick={onOpenBuilder}
-            className="px-3 py-1.5 rounded-full bg-white/95 hover:bg-white text-stone-700 hover:text-stone-900 shadow-md border border-stone-200 backdrop-blur-xs text-[11px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer hover:shadow-lg active:scale-95"
-            title="Admin Login to Studio"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
-            <span>Admin Login</span>
-          </button>
-        </div>
-      )}
+      {/* Public view is kept clean and distraction-free without any admin bar */}
 
       {/* Desktop Presentation Ambiance: Soft floating light and delicate golden dust */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden hidden md:block">
@@ -163,20 +129,10 @@ export const PublicGuestView: React.FC<PublicGuestViewProps> = ({
 
             <button
               onClick={() => window.location.reload()}
-              className="py-2.5 px-6 rounded-xl text-xs font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 transition-colors"
+              className="py-2.5 px-6 rounded-xl text-xs font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 transition-colors cursor-pointer"
             >
               Check Again
             </button>
-
-            {onOpenBuilder && (
-              <button
-                onClick={onOpenBuilder}
-                className="mt-8 text-[11px] text-amber-800 hover:text-amber-900 underline flex items-center gap-1"
-              >
-                <Edit3 className="w-3 h-3" />
-                <span>Admin? Publish this site in Studio</span>
-              </button>
-            )}
           </div>
         ) : !unlocked ? (
           /* Password Protection Gate */
@@ -239,28 +195,18 @@ export const PublicGuestView: React.FC<PublicGuestViewProps> = ({
           </>
         )}
 
-        {/* Subtle, Dignified Footer for Public Guests */}
-        <div className="py-4 px-6 text-center border-t border-stone-200/50 bg-stone-50/60 font-montserrat text-[11px] text-stone-400">
-          <div className="flex items-center justify-center gap-1.5 mb-1 opacity-70">
+        {/* Pure, Dignified Footer for Public Guests (No Admin Bar or Buttons) */}
+        <div className="py-6 px-6 text-center border-t border-stone-200/50 bg-stone-50/60 font-montserrat text-[11px] text-stone-400 select-none">
+          <div
+            className="flex items-center justify-center gap-1.5 mb-1 opacity-70 cursor-default"
+            onDoubleClick={() => onOpenBuilder?.()}
+          >
             <SacredCrossIcon color={data.accentColor} className="w-3 h-3" />
             <span className="tracking-widest uppercase text-[10px]">Blessed Milestones</span>
           </div>
           <p className="font-light">
             Digital Invitation for {data.babyName}&apos;s Holy Baptism &amp; 1st Birthday
           </p>
-
-          {/* Discreet Host Access Link */}
-          {onOpenBuilder && (
-            <div className="mt-3 pt-2 border-t border-stone-200/40">
-              <button
-                onClick={onOpenBuilder}
-                className="text-[10px] text-stone-400 hover:text-stone-700 transition-colors inline-flex items-center gap-1 cursor-pointer"
-              >
-                <Edit3 className="w-2.5 h-2.5" />
-                <span>Admin / Host Studio</span>
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>

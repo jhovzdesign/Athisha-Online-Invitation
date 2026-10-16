@@ -77,6 +77,29 @@ const DEFAULT_SITE_1: PublicSite = {
   rsvps: INITIAL_RSVPS,
 };
 
+// Helper to ensure countdown and event dates accurately target December 7, 2026
+function normalizeSiteData(data: InvitationData): InvitationData {
+  if (!data) return data;
+  let updated = { ...data };
+  if (!updated.countdownTarget || updated.countdownTarget.startsWith('2026-12-13')) {
+    updated.countdownTarget = '2026-12-07T10:00:00';
+  }
+  if (updated.baptismDate && updated.baptismDate.includes('December 13, 2026')) {
+    updated.baptismDate = updated.baptismDate
+      .replace('Sunday, December 13, 2026', 'Monday, December 7, 2026')
+      .replace('December 13, 2026', 'December 7, 2026');
+  }
+  if (updated.birthdayDate && updated.birthdayDate.includes('December 13, 2026')) {
+    updated.birthdayDate = updated.birthdayDate
+      .replace('Sunday, December 13, 2026', 'Monday, December 7, 2026')
+      .replace('December 13, 2026', 'December 7, 2026');
+  }
+  if (!updated.closingSignature || /Juan\s*(&|and)\s*Elena/i.test(updated.closingSignature) || /With love, Parents/i.test(updated.closingSignature)) {
+    updated.closingSignature = 'With Love,';
+  }
+  return updated;
+}
+
 export default function App() {
   // All public sites managed by the admin in centralized database
   const [sites, setSites] = useState<PublicSite[]>(() => {
@@ -84,7 +107,12 @@ export default function App() {
       const saved = localStorage.getItem(STORAGE_KEY_SITES);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((s: PublicSite) => ({
+            ...s,
+            data: normalizeSiteData(s.data),
+          }));
+        }
       }
     } catch {
       // Fallback
@@ -232,7 +260,7 @@ export default function App() {
                 Date.now() - lastLocalEditTimeRef.current < 4000;
 
               // If the user recently uploaded a custom photo locally, protect it from being stomped by older remote snapshot
-              let siteData = cSite.data;
+              let siteData = normalizeSiteData(cSite.data);
               if (
                 isRecentLocalEdit &&
                 existing?.data?.babyPhotoUrl?.startsWith('data:') &&

@@ -186,7 +186,7 @@ export const INITIAL_INVITATION_DATA: InvitationData = {
   introText: 'We invite you to celebrate a very special milestone in our little one’s life as he is welcomed into God’s family and turns one year old.',
 
   // Baptism
-  baptismDate: 'Sunday, December 13, 2026',
+  baptismDate: 'Monday, December 7, 2026',
   baptismTime: '10:00 AM',
   baptismChurch: 'St. Joseph Parish Church',
   baptismAddress: 'MacArthur Highway, Urdaneta City, Pangasinan',
@@ -194,7 +194,7 @@ export const INITIAL_INVITATION_DATA: InvitationData = {
   baptismNotes: 'The Sacred Rite begins promptly. Please be seated in prayer by 9:45 AM.',
 
   // Birthday Reception
-  birthdayDate: 'Sunday, December 13, 2026',
+  birthdayDate: 'Monday, December 7, 2026',
   birthdayTime: '12:00 PM',
   birthdayVenue: 'The Garden Events Place',
   birthdayAddress: 'Poblacion, Urdaneta City, Pangasinan',
@@ -202,7 +202,7 @@ export const INITIAL_INVITATION_DATA: InvitationData = {
   birthdayNotes: 'A feast of thanksgiving, sweet cake cutting, joyful laughter, and celebration!',
 
   // Countdown
-  countdownTarget: '2026-12-13T10:00:00',
+  countdownTarget: '2026-12-07T10:00:00',
 
   // Parents
   fatherName: 'Juan Santos',
@@ -306,7 +306,7 @@ export const INITIAL_INVITATION_DATA: InvitationData = {
   // Closing
   closingHeading: 'Thank You',
   closingMessage: 'Thank you for being part of our little one’s journey and for celebrating this sacred and joyous milestone with us.',
-  closingSignature: 'With love, Juan & Elena',
+  closingSignature: 'With Love,',
 
   // Design default: Heavenly Blessings
   templateId: 'heavenly-blessings',

@@ -19,7 +19,6 @@ import {
   Calendar,
   Clock,
   Heart,
-  Plus,
   Trash2,
   Check,
   Music,
@@ -240,25 +239,6 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
       fontScript: tpl.theme.fontScript,
       fontBody: tpl.theme.fontBody,
     });
-  };
-
-  // Add Godparent
-  const handleAddGodparent = () => {
-    const newGp = {
-      id: 'gp_' + Date.now(),
-      name: 'New Sponsor',
-      role: 'Godmother' as const,
-      relationship: 'Friend',
-    };
-    updateField('godparents', [...data.godparents, newGp]);
-  };
-
-  // Remove Godparent
-  const handleRemoveGodparent = (id: string) => {
-    updateField(
-      'godparents',
-      data.godparents.filter((g) => g.id !== id)
-    );
   };
 
   // Export RSVPs to CSV
@@ -840,6 +820,44 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
               </div>
             </div>
 
+            {/* Celebration Countdown Target */}
+            <div className="space-y-3 pt-3 border-t border-stone-100 bg-amber-50/50 -mx-2 px-3 py-3 rounded-2xl border border-amber-200/60">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold tracking-wider uppercase text-amber-900">
+                  <Clock className="w-3.5 h-3.5 text-amber-700" />
+                  <span>Celebration Countdown</span>
+                </div>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                  Live Timer
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-stone-700 mb-1">
+                  Countdown Target Date &amp; Time
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="datetime-local"
+                    value={data.countdownTarget ? data.countdownTarget.substring(0, 16) : '2026-12-07T10:00'}
+                    onChange={(e) => updateField('countdownTarget', e.target.value ? `${e.target.value}:00` : '2026-12-07T10:00:00')}
+                    className="flex-1 px-3 py-2 text-xs border border-stone-200 rounded-xl bg-white focus:ring-2 focus:ring-amber-500/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => updateField('countdownTarget', '2026-12-07T10:00:00')}
+                    className="text-[10px] font-semibold text-amber-900 hover:text-amber-950 bg-amber-200/80 hover:bg-amber-300/80 px-2.5 py-1.5 rounded-xl transition-colors cursor-pointer shrink-0 shadow-2xs"
+                    title="Quick set countdown target to December 7, 2026 at 10:00 AM"
+                  >
+                    Dec 7, 2026
+                  </button>
+                </div>
+                <p className="text-[11px] text-stone-500 mt-1">
+                  Accurately calculates remaining days, hours, minutes, and seconds from today until December 7, 2026.
+                </p>
+              </div>
+            </div>
+
             {/* Bible Verse */}
             <div className="space-y-3 pt-3 border-t border-stone-100">
               <h3 className="text-xs font-bold tracking-wider uppercase text-stone-400">
@@ -1126,80 +1144,19 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
                   className="w-full px-3 py-2 text-xs border border-stone-200 rounded-xl resize-none"
                 />
               </div>
-            </div>
 
-            {/* Godparents List */}
-            <div className="space-y-3 pt-3 border-t border-stone-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xs font-bold tracking-wider uppercase text-stone-400">
-                    Godparents ({data.godparents.length})
-                  </h3>
-                  <span className="text-[11px] text-stone-500">Circle of Love</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleAddGodparent}
-                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-stone-100 hover:bg-stone-200 text-stone-700 flex items-center gap-1 transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add</span>
-                </button>
-              </div>
-
-              <div className="space-y-2">
-                {data.godparents.map((gp, idx) => (
-                  <div
-                    key={gp.id}
-                    className="p-3 bg-stone-50 rounded-xl border border-stone-200 flex items-center gap-2"
-                  >
-                    <div className="flex-1 space-y-1">
-                      <input
-                        type="text"
-                        value={gp.name}
-                        onChange={(e) => {
-                          const updated = [...data.godparents];
-                          updated[idx].name = e.target.value;
-                          updateField('godparents', updated);
-                        }}
-                        className="w-full px-2 py-1 text-xs bg-white border border-stone-200 rounded-lg font-medium"
-                      />
-                      <div className="grid grid-cols-2 gap-1.5">
-                        <select
-                          value={gp.role}
-                          onChange={(e) => {
-                            const updated = [...data.godparents];
-                            updated[idx].role = e.target.value as 'Godmother' | 'Godfather' | 'Principal Sponsor';
-                            updateField('godparents', updated);
-                          }}
-                          className="px-2 py-0.5 text-[11px] bg-white border border-stone-200 rounded-md"
-                        >
-                          <option value="Godmother">Godmother</option>
-                          <option value="Godfather">Godfather</option>
-                          <option value="Principal Sponsor">Principal Sponsor</option>
-                        </select>
-                        <input
-                          type="text"
-                          value={gp.relationship || ''}
-                          placeholder="e.g. Aunt"
-                          onChange={(e) => {
-                            const updated = [...data.godparents];
-                            updated[idx].relationship = e.target.value;
-                            updateField('godparents', updated);
-                          }}
-                          className="px-2 py-0.5 text-[11px] bg-white border border-stone-200 rounded-md"
-                        />
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveGodparent(gp.id)}
-                      className="p-1.5 text-stone-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
+              <div>
+                <label className="block text-xs font-medium text-stone-700 mb-1">Closing Sign-off</label>
+                <input
+                  type="text"
+                  value={data.closingSignature || 'With Love,'}
+                  onChange={(e) => updateField('closingSignature', e.target.value)}
+                  placeholder="With Love,"
+                  className="w-full px-3 py-2 text-xs border border-stone-200 rounded-xl font-medium"
+                />
+                <p className="text-[10px] text-stone-400 mt-1">
+                  Shown in script font at the bottom above the celebrant's name (e.g. &ldquo;With Love,&rdquo;).
+                </p>
               </div>
             </div>
           </div>
@@ -1327,55 +1284,6 @@ export const BuilderSidebar: React.FC<BuilderSidebarProps> = ({
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Timeline Items */}
-            <div className="space-y-3 pt-3 border-t border-stone-100">
-              <h3 className="text-xs font-bold tracking-wider uppercase text-stone-400">
-                Event Timeline Schedule
-              </h3>
-              <div className="space-y-2">
-                {data.timelineItems.map((item, idx) => (
-                  <div
-                    key={item.id}
-                    className="p-2.5 bg-stone-50 rounded-xl border border-stone-200 space-y-1.5"
-                  >
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={item.time}
-                        onChange={(e) => {
-                          const updated = [...data.timelineItems];
-                          updated[idx].time = e.target.value;
-                          updateField('timelineItems', updated);
-                        }}
-                        className="w-20 px-2 py-1 text-xs font-semibold bg-white border border-stone-200 rounded-lg"
-                      />
-                      <input
-                        type="text"
-                        value={item.title}
-                        onChange={(e) => {
-                          const updated = [...data.timelineItems];
-                          updated[idx].title = e.target.value;
-                          updateField('timelineItems', updated);
-                        }}
-                        className="flex-1 px-2 py-1 text-xs font-medium bg-white border border-stone-200 rounded-lg"
-                      />
-                    </div>
-                    <input
-                      type="text"
-                      value={item.subtitle}
-                      placeholder="Location/notes"
-                      onChange={(e) => {
-                        const updated = [...data.timelineItems];
-                        updated[idx].subtitle = e.target.value;
-                        updateField('timelineItems', updated);
-                      }}
-                      className="w-full px-2 py-0.5 text-[11px] bg-white border border-stone-200 rounded-md text-stone-600"
-                    />
                   </div>
                 ))}
               </div>

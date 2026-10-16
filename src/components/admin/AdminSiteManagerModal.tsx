@@ -103,7 +103,7 @@ export const AdminSiteManagerModal: React.FC<AdminSiteManagerModalProps> = ({
       fontHeading: chosenTemplate.theme.fontHeading,
       fontScript: chosenTemplate.theme.fontScript,
       fontBody: chosenTemplate.theme.fontBody,
-      closingSignature: `With love, Parents of ${newBabyName.trim()}`,
+      closingSignature: 'With Love,',
     };
 
     const finalSlug = (newSlug.trim() || 'baby-' + Date.now()).toLowerCase();

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { InvitationData, GuestRsvp, TimelineItem, GalleryPhoto } from '../../types/invitation';
+import React, { useState, useEffect, useMemo } from 'react';
+import { InvitationData, GuestRsvp, GalleryPhoto } from '../../types/invitation';
 import { DecorativeFrame } from '../common/DecorativeFrames';
 import {
   SacredCrossIcon,
@@ -19,9 +19,7 @@ import {
   Volume2,
   VolumeX,
   Camera,
-  Utensils,
   Heart,
-  Gift,
   Check,
   RotateCcw,
   Sparkles,
@@ -72,10 +70,39 @@ export const InvitationView: React.FC<InvitationViewProps> = ({
     invitationAudio.toggle();
   };
 
-  // Countdown Calculation
+  // Helper to parse countdown target date accurately across all devices and browsers
+  const parseCountdownTarget = (targetStr?: string): Date => {
+    // If no target provided or if using the legacy December 13 default, point to Dec 7, 2026 at 10:00 AM
+    if (!targetStr || targetStr.startsWith('2026-12-13')) {
+      return new Date(2026, 11, 7, 10, 0, 0); // Month index 11 is December
+    }
+
+    // Handle ISO format 'YYYY-MM-DDTHH:mm:ss' or 'YYYY-MM-DD'
+    const isoMatch = targetStr.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+    if (isoMatch) {
+      const year = parseInt(isoMatch[1], 10);
+      const month = parseInt(isoMatch[2], 10) - 1;
+      const day = parseInt(isoMatch[3], 10);
+      const hours = isoMatch[4] !== undefined ? parseInt(isoMatch[4], 10) : 10;
+      const minutes = isoMatch[5] !== undefined ? parseInt(isoMatch[5], 10) : 0;
+      const seconds = isoMatch[6] !== undefined ? parseInt(isoMatch[6], 10) : 0;
+      return new Date(year, month, day, hours, minutes, seconds);
+    }
+
+    const fallback = new Date(targetStr);
+    if (!isNaN(fallback.getTime())) {
+      return fallback;
+    }
+
+    // Safe fallback to December 7, 2026 10:00 AM
+    return new Date(2026, 11, 7, 10, 0, 0);
+  };
+
+  // Accurate Countdown Calculation from current local date and time to target date
   useEffect(() => {
     const updateCountdown = () => {
-      const targetTime = new Date(data.countdownTarget || '2026-12-13T10:00:00').getTime();
+      const targetDate = parseCountdownTarget(data.countdownTarget);
+      const targetTime = targetDate.getTime();
       const now = new Date().getTime();
       const difference = targetTime - now;
 
@@ -93,6 +120,17 @@ export const InvitationView: React.FC<InvitationViewProps> = ({
     updateCountdown();
     const interval = setInterval(updateCountdown, 1000);
     return () => clearInterval(interval);
+  }, [data.countdownTarget]);
+
+  // Formatted date string for celebration display e.g. "Monday, December 7, 2026"
+  const targetFormattedDate = useMemo(() => {
+    const d = parseCountdownTarget(data.countdownTarget);
+    return d.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   }, [data.countdownTarget]);
 
   // Handle RSVP confirmation
@@ -121,26 +159,6 @@ export const InvitationView: React.FC<InvitationViewProps> = ({
     `https://maps.google.com/?q=${encodeURIComponent(
       [data.birthdayVenue, data.birthdayAddress].filter(Boolean).join(', ')
     )}`;
-
-  // Helper for timeline icon
-  const renderTimelineIcon = (iconType: TimelineItem['icon']) => {
-    switch (iconType) {
-      case 'cross':
-        return <SacredCrossIcon color={data.accentColor} className="w-4 h-4" />;
-      case 'camera':
-        return <Camera className="w-4 h-4" style={{ color: data.accentColor }} />;
-      case 'cake':
-        return <BirthdayCakeIcon color={data.accentColor} className="w-4 h-4" />;
-      case 'utensils':
-        return <Utensils className="w-4 h-4" style={{ color: data.accentColor }} />;
-      case 'heart':
-        return <Heart className="w-4 h-4 fill-current" style={{ color: data.accentColor }} />;
-      case 'gift':
-        return <Gift className="w-4 h-4" style={{ color: data.accentColor }} />;
-      default:
-        return <GoldSparkleIcon color={data.accentColor} className="w-4 h-4" />;
-    }
-  };
 
   return (
     <div
@@ -537,14 +555,19 @@ export const InvitationView: React.FC<InvitationViewProps> = ({
             border: `1.5px solid ${data.accentColor}40`,
           }}
         >
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <GoldSparkleIcon color={data.accentColor} className="w-3.5 h-3.5" />
-            <h4
-              className={`${fontHeadingClass} text-xl sm:text-2xl font-semibold tracking-wide text-stone-800`}
-            >
-              The Celebration Begins In
-            </h4>
-            <GoldSparkleIcon color={data.accentColor} className="w-3.5 h-3.5" />
+          <div className="flex flex-col items-center justify-center mb-3">
+            <div className="flex items-center justify-center gap-2">
+              <GoldSparkleIcon color={data.accentColor} className="w-3.5 h-3.5" />
+              <h4
+                className={`${fontHeadingClass} text-xl sm:text-2xl font-semibold tracking-wide text-stone-800`}
+              >
+                The Celebration Begins In
+              </h4>
+              <GoldSparkleIcon color={data.accentColor} className="w-3.5 h-3.5" />
+            </div>
+            <p className="text-xs font-semibold text-amber-900/80 font-montserrat mt-1 tracking-wide">
+              {targetFormattedDate}
+            </p>
           </div>
 
           {/* Large Elegant Numbers (Not technical dashboard timer) */}
@@ -631,57 +654,6 @@ export const InvitationView: React.FC<InvitationViewProps> = ({
           >
             {data.parentsMessage}
           </p>
-        </section>
-
-        {/* ========================================================================= */}
-        {/* SECTION 7: GODPARENTS (CIRCLE OF LOVE)                                    */}
-        {/* ========================================================================= */}
-        <section className="space-y-3">
-          <div className="text-center mb-4">
-            <div className="inline-flex items-center justify-center gap-1.5 text-stone-400 mb-1">
-              <HolyDoveIcon color={data.accentColor} className="w-4 h-4" />
-              <span className="text-[10px] tracking-[0.28em] uppercase font-semibold font-montserrat">
-                Circle of Love
-              </span>
-            </div>
-            <h3 className={`${fontHeadingClass} text-2xl font-bold text-stone-800`}>
-              {data.godparentsHeading || 'Godparents'}
-            </h3>
-            <p className="text-xs text-stone-500 font-montserrat max-w-xs mx-auto italic mt-1">
-              {data.godparentsSubheading ||
-                'Those who will help guide our little one with faith, love, and kindness.'}
-            </p>
-          </div>
-
-          {/* Godparent Cards Grid */}
-          <div className="grid grid-cols-2 gap-2.5">
-            {data.godparents.map((gp) => (
-              <div
-                key={gp.id}
-                className="p-3.5 rounded-2xl bg-white border border-stone-200/70 shadow-xs flex flex-col justify-between transition-transform hover:scale-[1.01]"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span
-                      className="text-[10px] tracking-wider uppercase font-semibold"
-                      style={{ color: data.accentColor }}
-                    >
-                      {gp.role}
-                    </span>
-                    <SacredCrossIcon color={data.accentColor} className="w-3 h-3.5 opacity-60" />
-                  </div>
-                  <h4 className="text-xs sm:text-sm font-semibold text-stone-800 font-montserrat line-clamp-2">
-                    {gp.name}
-                  </h4>
-                </div>
-                {gp.relationship && (
-                  <span className="text-[10px] text-stone-400 font-montserrat block mt-1">
-                    {gp.relationship}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
         </section>
 
         {/* ========================================================================= */}
@@ -800,51 +772,6 @@ export const InvitationView: React.FC<InvitationViewProps> = ({
                 <p className="text-[11px] text-stone-700 font-montserrat truncate px-1">
                   {photo.caption}
                 </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ========================================================================= */}
-        {/* SECTION 11: EVENT TIMELINE                                                */}
-        {/* ========================================================================= */}
-        <section className="space-y-4">
-          <div className="text-center">
-            <span className="text-[10px] tracking-[0.25em] uppercase font-semibold text-stone-400 font-montserrat">
-              Order of Events
-            </span>
-            <h3 className={`${fontHeadingClass} text-2xl font-bold text-stone-800`}>
-              Event Timeline
-            </h3>
-          </div>
-
-          <div className="relative pl-6 space-y-6 before:content-[''] before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-stone-200">
-            {data.timelineItems.map((item) => (
-              <div key={item.id} className="relative group">
-                {/* Timeline node icon */}
-                <div
-                  className="absolute -left-6 top-0 w-6 h-6 rounded-full bg-white border-2 flex items-center justify-center shadow-xs transition-transform group-hover:scale-110"
-                  style={{ borderColor: data.accentColor }}
-                >
-                  {renderTimelineIcon(item.icon)}
-                </div>
-
-                <div className="pl-4">
-                  <span
-                    className="text-[11px] font-semibold tracking-wider uppercase font-montserrat block"
-                    style={{ color: data.accentColor }}
-                  >
-                    {item.time}
-                  </span>
-                  <h4 className={`${fontHeadingClass} text-lg font-bold text-stone-800 leading-tight`}>
-                    {item.title}
-                  </h4>
-                  {item.subtitle && (
-                    <p className="text-xs text-stone-500 font-montserrat font-light mt-0.5">
-                      {item.subtitle}
-                    </p>
-                  )}
-                </div>
               </div>
             ))}
           </div>
@@ -1044,7 +971,9 @@ export const InvitationView: React.FC<InvitationViewProps> = ({
             className={`${fontScriptClass} text-3xl text-stone-800 mb-1`}
             style={{ color: data.accentColor }}
           >
-            {data.closingSignature || `With love, ${data.fatherName} & ${data.motherName}`}
+            {!data.closingSignature || /Juan\s*(&|and)\s*Elena/i.test(data.closingSignature) || /With love, Parents/i.test(data.closingSignature)
+              ? 'With Love,'
+              : data.closingSignature}
           </p>
 
           <p className={`${fontHeadingClass} text-xl font-semibold text-stone-700 tracking-wide uppercase mt-1`}>
